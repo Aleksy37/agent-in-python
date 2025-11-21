@@ -11,8 +11,9 @@ def get_files_info(working_directory, directory="."):
     if not os.path.isdir(absolute_path):
         return f'Error: "{directory}" is not a directory'
     
-    lines = []
+    
     try:
+        lines = []
         for entry in os.listdir(absolute_path):
             file_path = os.path.join(absolute_path, entry)
             try:
