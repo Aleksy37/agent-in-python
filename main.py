@@ -32,7 +32,7 @@ def main():
         print(f"User prompt: {prompt}")
 
     messages = [
-        types.Content(role="user", parts=[types.Part(text=prompt)])
+        types.Content(role="user", parts=[types.Part(text   =prompt)])
     ]
 
     response = generate_content(client, messages)
