@@ -4,12 +4,14 @@ from google import genai
 from google.genai import types
 import argparse
 import sys
+from prompts import system_prompt
 
 
 def generate_content(client, messages):
     return client.models.generate_content(
-        model="gemini-2.0-flash-001",
-        contents= messages
+        model="gemini-2.5-flash",
+        contents= messages,
+        config= types.GenerateContentConfig(system_instruction=system_prompt)
     )
 
 
