@@ -15,7 +15,6 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Enable Verbose output")
     args = parser.parse_args()
 
-    
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -32,45 +31,55 @@ def main():
 
 
 def generate_content(client, messages, verbose):
-    function_responses = []
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions], system_instruction=system_prompt
-        ),
-    )
+    counter = 0
+    while counter < 20:
+        counter += 1
+        function_responses = []
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=messages,
+                config=types.GenerateContentConfig(
+                    tools=[available_functions], system_instruction=system_prompt
+                ),
+            )
+        except ConnectionError as e:
+            print(f"Gemini API error:{e}")
+            continue
 
-    if not response.usage_metadata:
-        raise RuntimeError("Gemini API response appears to be malformed")
-    
-    if verbose:
-        print(
-            f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
-            f"Response tokens: {response.usage_metadata.candidates_token_count}"  
-        )
+        if not response.usage_metadata:
+            raise RuntimeError("Gemini API response appears to be malformed")
+        
+        if verbose:
+            print(
+                f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
+                f"Response tokens: {response.usage_metadata.candidates_token_count}"  
+            )
 
-    if not response.function_calls:
-        print("Response:")
-        print(response.text)
-    else:
-
-        for function_call_part in response.function_calls:
-            result = call_function(function_call_part) 
+        if not response.function_calls and response.text:
+            print("Response:")
+            print(response.text)
+            break
 
         else:
-            function_responses.append(result.parts[0])
+            for candidate in response.candidates:
+                messages.append(candidate.content)
 
-        if verbose:
-            if verbose:
-                tool_response = result.parts[0].function_response.response  # this is a dict
-                result_text = tool_response.get("result", "")
-                print("->")
-                print(result_text)
-                
-        if not function_responses:
-            raise Exception("No Function Responses to show")
+            try:
+                for function_call_part in response.function_calls:
+                    result = call_function(function_call_part)
+                    function_responses.append(result.parts[0])
 
+                    if verbose:
+                        tool_response = result.parts[0].function_response.response
+                        result_text = tool_response.get("result", "")
+                        print("->")
+                        print(result_text)
+                        
+            except TypeError as e:
+                print(f"Malformed response object: {e}") 
+
+            messages.append(types.Content(role="user", parts=function_responses))
 
 if __name__ == "__main__":
     main()
