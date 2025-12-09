@@ -1,5 +1,21 @@
 import os
 import subprocess
+from google.genai import types
+
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Run a Python File, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file we want to run, relative to the working directory. If not provided, lists files in the working directory itself.",
+            ),
+        },
+    ),
+)
 
 def run_python_file(working_directory, file_path, args=[]):
 
@@ -24,9 +40,9 @@ def run_python_file(working_directory, file_path, args=[]):
              text=True
         )
         if result.stdout:
-             output.append(f"STDOUT: {result.stdout}")
-        if result.stdout:
-             output.append(f"STDERR: {result.stderr}")
+             output.append(result.stdout)
+        if result.stderr:
+             output.append(result.stderr)
         if result.returncode != 0:
             output.append(f'Process exited with code {result.returncode}')
         if not output:

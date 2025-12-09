@@ -6,7 +6,8 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
-from call_function import available_functions
+from call_function import available_functions, call_function
+
 
 def main():
     parser = argparse.ArgumentParser(description="AI agent CLI tool")
@@ -31,6 +32,7 @@ def main():
 
 
 def generate_content(client, messages, verbose):
+    function_responses = []
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=messages,
@@ -52,8 +54,22 @@ def generate_content(client, messages, verbose):
         print("Response:")
         print(response.text)
     else:
+
         for function_call_part in response.function_calls:
-            print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+            result = call_function(function_call_part) 
+
+        else:
+            function_responses.append(result.parts[0])
+
+        if verbose:
+            if verbose:
+                tool_response = result.parts[0].function_response.response  # this is a dict
+                result_text = tool_response.get("result", "")
+                print("->")
+                print(result_text)
+                
+        if not function_responses:
+            raise Exception("No Function Responses to show")
 
 
 if __name__ == "__main__":
